@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live WebRTC</title>
+  <!-- Inclure la bibliothèque WebRTC -->
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+</head>
+<body>
+  <!-- Créer les éléments de la page nécessaires à la communication WebRTC -->
+  <video id="localVideo" autoplay></video>
+  <video id="remoteVideo" autoplay></video>
+
+  <!-- Créer un bouton pour démarrer la diffusion en direct -->
+  <button id="startButton">Start</button>
+
+  <!-- Créer un bouton pour arrêter la diffusion en direct -->
+  <button id="stopButton">Stop</button>
+
+  <script>
+    // Obtenir les références aux éléments de la page
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+
+    // Créer les objets RTCPeerConnection
+    const pc1 = new RTCPeerConnection();
+    const pc2 = new RTCPeerConnection();
+
+    // Définir les fonctions de gestion des événements
+    startButton.onclick = () => {
+      // Demander l'accès à la webcam
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          // Afficher la vidéo de la webcam dans le lecteur local
+          localVideo.srcObject = stream;
+
+          // Ajouter le flux de la webcam à l'objet RTCPeerConnection local
+          stream.getTracks().forEach((track) => pc1.addTrack(track, stream));
+        });
+
+      // Créer une offre de connexion et l'envoyer à l'objet RTCPeerConnection distant
+      pc1.createOffer()
+        .then((offer) => pc1.setLocalDescription(offer))
+        .then(() => pc2.setRemoteDescription(pc1.localDescription))
+        .then(() => pc2.createAnswer())
+        .then((answer) => pc2.setLocalDescription(answer))
+        .then(() => pc1.setRemoteDescription(pc2.localDescription));
+    };
+
+    stopButton.onclick = () => {
+      // Arrêter la diffusion en direct en fermant les objets RTCPeerConnection
+      pc1.close();
+      pc2.close();
+
+      // Effacer la vidéo de la webcam du lecteur local
+      localVideo.srcObject = null;
+    };
+
+      // Gérer la réception de la vidéo de la webcam par l'objet RTCPeerConnection distant
+  pc2.ontrack = (event) => {
+    // Afficher la vidéo de la webcam dans le lecteur distant
+    remoteVideo.srcObject = event.streams[0];
+  };
+  </script>
+</body>
+</html>
+
